@@ -228,13 +228,15 @@ class SearchField<T> extends StatefulWidget {
   /// input formatter for the searchfield
   final List<TextInputFormatter>? inputFormatters;
 
-  final Function(T?)? onChange;
+  final Function(dynamic)? onChange;
 
   final bool enabled;
 
   final Widget? additionalWidget;
 
   final Function? additionalWidgetOnPressed;
+
+  final bool searchExactMatch;
 
   SearchField({
     Key? key,
@@ -265,6 +267,7 @@ class SearchField<T> extends StatefulWidget {
     this.onChange,
     this.additionalWidget,
     this.additionalWidgetOnPressed,
+    this.searchExactMatch = true,
   })  : assert(
             (initialValue != null && suggestions.containsObject(initialValue)) ||
                 initialValue == null,
@@ -662,12 +665,14 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
               suggestionStream.sink.add(searchResult);
 
               if (widget.onChange != null) {
-                if (searchResult.isNotEmpty) {
+                if (searchResult.isNotEmpty && widget.searchExactMatch) {
                   if (searchResult[0].searchKey.toLowerCase() == query.toLowerCase()) {
                     widget.onChange!(searchResult[0].item);
                   } else {
                     widget.onChange!(null);
                   }
+                } else {
+                  widget.onChange!(query);
                 }
               }
             },
