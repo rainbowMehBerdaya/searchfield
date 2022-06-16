@@ -154,6 +154,9 @@ class SearchField<T> extends StatefulWidget {
   /// Specifies height for each suggestion item in the list.
   ///
   /// When not specified, the default value is `35.0`.
+  ///
+  /// If there is [additionalWidget],
+  /// additionalTopWidgetHeight will be use this itemHeight.
   final double itemHeight;
 
   /// Specifies the color of margin between items in suggestions list.
@@ -166,6 +169,10 @@ class SearchField<T> extends StatefulWidget {
   /// When not specified, the default value is `5`.
   /// if the number of suggestions is less than 5, then [maxSuggestionsInViewPort]
   /// will be the length of [suggestions]
+  ///
+  /// If there is any additional [additionalWidget],
+  /// additionalTopWidgetHeight is included.
+  /// Ex: [maxSuggestionsInViewPort] = 5, [additionalWidget], total = 6
   final int maxSuggestionsInViewPort;
 
   /// Specifies the `TextEditingController` for [SearchField].
@@ -225,6 +232,10 @@ class SearchField<T> extends StatefulWidget {
 
   final bool enabled;
 
+  final Widget? additionalWidget;
+
+  final Function? additionalWidgetOnPressed;
+
   SearchField({
     Key? key,
     required this.suggestions,
@@ -252,6 +263,8 @@ class SearchField<T> extends StatefulWidget {
     this.textInputAction,
     this.validator,
     this.onChange,
+    this.additionalWidget,
+    this.additionalWidgetOnPressed,
   })  : assert(
             (initialValue != null && suggestions.containsObject(initialValue)) ||
                 initialValue == null,
@@ -300,6 +313,7 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
               suggestionStream.sink.add(widget.suggestions);
             });
           }
+          _overlayEntry = _createOverlay();
           Overlay.of(context)!.insert(_overlayEntry);
         } else {
           _overlayEntry.remove();
@@ -351,7 +365,7 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
     }
     if (oldWidget.hasOverlay != widget.hasOverlay) {
       if (widget.hasOverlay) {
-        _overlayEntry = _createOverlay();
+        // _overlayEntry = _createOverlay();
         _focus!.removeListener(initialize);
         initialize();
       } else {
@@ -374,7 +388,49 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
         if (snapshot.data == null || !isSuggestionExpanded) {
           return SizedBox();
         } else if (snapshot.data!.isEmpty) {
-          return widget.emptyWidget;
+          return Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: widget.suggestionsDecoration ??
+                BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: onSurfaceColor.withOpacity(0.1),
+                      blurRadius: 8.0,
+                      spreadRadius: 2.0,
+                      offset: widget.hasOverlay
+                          ? Offset(
+                              2.0,
+                              5.0,
+                            )
+                          : Offset(1.0, 0.5),
+                    ),
+                  ],
+                ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (widget.additionalWidget != null)
+                  SizedBox(
+                    height: widget.itemHeight,
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                      ),
+                      onPressed: () {
+                        // hide the suggestions
+                        suggestionStream.sink.add(null);
+                        widget.additionalWidgetOnPressed!();
+                      },
+                      child: widget.additionalWidget!,
+                    ),
+                  ),
+                widget.emptyWidget,
+              ],
+            ),
+          );
         } else {
           if (snapshot.data!.length > widget.maxSuggestionsInViewPort) {
             height = widget.itemHeight * widget.maxSuggestionsInViewPort;
@@ -383,10 +439,16 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
           } else {
             height = snapshot.data!.length * widget.itemHeight;
           }
+
+          if (widget.additionalWidget != null) {
+            height += widget.itemHeight;
+          }
+
           return AnimatedContainer(
             duration: isUp ? Duration.zero : Duration(milliseconds: 100),
             height: height,
             alignment: Alignment.centerLeft,
+            clipBehavior: Clip.antiAlias,
             decoration: widget.suggestionsDecoration ??
                 BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
@@ -405,66 +467,90 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
                   ],
                 ),
             child: Scrollbar(
-              child: ListView.builder(
-                reverse: isUp,
-                padding: EdgeInsets.zero,
-                itemCount: snapshot.data!.length,
-                physics:
-                    snapshot.data!.length == 1 ? NeverScrollableScrollPhysics() : ScrollPhysics(),
-                itemBuilder: (context, index) => InkWell(
-                  onTap: () {
-                    searchController!.text = snapshot.data![index]!.searchKey;
-                    searchController!.selection = TextSelection.fromPosition(
-                      TextPosition(
-                        offset: searchController!.text.length,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (widget.additionalWidget != null)
+                    SizedBox(
+                      height: widget.itemHeight,
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                        ),
+                        onPressed: () {
+                          // hide the suggestions
+                          suggestionStream.sink.add(null);
+                          widget.additionalWidgetOnPressed!();
+                        },
+                        child: widget.additionalWidget!,
                       ),
-                    );
+                    ),
+                  Expanded(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      reverse: isUp,
+                      padding: EdgeInsets.zero,
+                      itemCount: snapshot.data!.length,
+                      physics: snapshot.data!.length == 1
+                          ? NeverScrollableScrollPhysics()
+                          : ScrollPhysics(),
+                      itemBuilder: (context, index) => InkWell(
+                        onTap: () {
+                          searchController!.text = snapshot.data![index]!.searchKey;
+                          searchController!.selection = TextSelection.fromPosition(
+                            TextPosition(
+                              offset: searchController!.text.length,
+                            ),
+                          );
 
-                    // suggestion action to switch focus to next focus node
-                    if (widget.suggestionAction != null) {
-                      if (widget.suggestionAction == SuggestionAction.next) {
-                        _focus!.nextFocus();
-                      } else if (widget.suggestionAction == SuggestionAction.unfocus) {
-                        _focus!.unfocus();
-                      }
-                    }
+                          // suggestion action to switch focus to next focus node
+                          if (widget.suggestionAction != null) {
+                            _focus!.unfocus();
+                          }
 
-                    // hide the suggestions
-                    suggestionStream.sink.add(null);
-                    if (widget.onSuggestionTap != null) {
-                      widget.onSuggestionTap!(snapshot.data![index]!);
-                    }
+                          // hide the suggestions
+                          suggestionStream.sink.add(null);
+                          if (widget.onSuggestionTap != null) {
+                            widget.onSuggestionTap!(snapshot.data![index]!);
+                          }
 
-                    widget.onChange!(snapshot.data![index]!.item);
-                  },
-                  child: Container(
-                    height: widget.itemHeight,
-                    padding: EdgeInsets.symmetric(horizontal: 10.0),
-                    width: double.infinity,
-                    alignment: Alignment.centerLeft,
-                    decoration: widget.suggestionItemDecoration?.copyWith(
-                          border: widget.suggestionItemDecoration?.border ??
-                              Border(
-                                bottom: BorderSide(
-                                  color: widget.marginColor ?? onSurfaceColor.withOpacity(0.1),
-                                ),
+                          widget.onChange!(snapshot.data![index]!.item);
+                        },
+                        child: Container(
+                          height: widget.itemHeight,
+                          padding: EdgeInsets.symmetric(horizontal: 10.0),
+                          width: double.infinity,
+                          alignment: Alignment.centerLeft,
+                          decoration: widget.suggestionItemDecoration?.copyWith(
+                                border: widget.suggestionItemDecoration?.border ??
+                                    Border(
+                                      bottom: BorderSide(
+                                        color:
+                                            widget.marginColor ?? onSurfaceColor.withOpacity(0.1),
+                                      ),
+                                    ),
+                              ) ??
+                              BoxDecoration(
+                                border: index == snapshot.data!.length - 1
+                                    ? null
+                                    : Border(
+                                        bottom: BorderSide(
+                                          color:
+                                              widget.marginColor ?? onSurfaceColor.withOpacity(0.1),
+                                        ),
+                                      ),
                               ),
-                        ) ??
-                        BoxDecoration(
-                          border: index == snapshot.data!.length - 1
-                              ? null
-                              : Border(
-                                  bottom: BorderSide(
-                                    color: widget.marginColor ?? onSurfaceColor.withOpacity(0.1),
-                                  ),
-                                ),
+                          child: snapshot.data![index]!.child ??
+                              Text(
+                                snapshot.data![index]!.searchKey,
+                              ),
                         ),
-                    child: snapshot.data![index]!.child ??
-                        Text(
-                          snapshot.data![index]!.searchKey,
-                        ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           );
@@ -479,6 +565,9 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
     if ((position + height) < (size.height - widget.itemHeight * 2)) {
       return Offset(0, widget.itemHeight + 2.5);
     } else {
+      if (widget.additionalWidget != null) {
+        resultCount += 1;
+      }
       if (resultCount > widget.maxSuggestionsInViewPort) {
         isUp = false;
         return Offset(0, -(widget.itemHeight * widget.maxSuggestionsInViewPort));
@@ -523,6 +612,11 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
     } else {
       height = widget.suggestions.length * widget.itemHeight;
     }
+
+    if (widget.additionalWidget != null) {
+      height += widget.itemHeight;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
