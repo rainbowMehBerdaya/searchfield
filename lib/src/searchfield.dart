@@ -246,6 +246,8 @@ class SearchField<T> extends StatefulWidget {
 
   final bool searchExactMatch;
 
+  final bool? showAboveTextField;
+
   SearchField({
     Key? key,
     required this.suggestions,
@@ -278,6 +280,7 @@ class SearchField<T> extends StatefulWidget {
     this.additionalWidget,
     this.additionalWidgetOnPressed,
     this.searchExactMatch = true,
+    this.showAboveTextField,
   })  : assert(
             (initialValue != null && suggestions.containsObject(initialValue)) ||
                 initialValue == null,
@@ -358,6 +361,8 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
   @override
   void initState() {
     super.initState();
+    print('init');
+    print('maxSuggestionsInViewPort: ${widget.maxSuggestionsInViewPort}');
     searchController = widget.controller ?? TextEditingController();
     initialize();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -390,9 +395,9 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
         setState(() {});
       }
     }
-    if (oldWidget.suggestions != widget.suggestions) {
-      suggestionStream.sink.add(widget.suggestions);
-    }
+    // if (oldWidget.suggestions != widget.suggestions) {
+    //   suggestionStream.sink.add(widget.suggestions);
+    // }
     super.didUpdateWidget(oldWidget);
   }
 
@@ -521,20 +526,19 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
                             ),
                           );
 
-                  // suggestion action to switch focus to next focus node
-                  if (widget.suggestionAction != null) {
-                    if (widget.suggestionAction == SuggestionAction.next) {
-                      _focus!.nextFocus();
-                    } else if (widget.suggestionAction ==
-                        SuggestionAction.unfocus) {
-                      _focus!.unfocus();
-                    }
-                  }
+                          // suggestion action to switch focus to next focus node
+                          // if (widget.suggestionAction != null) {
+                          //   if (widget.suggestionAction == SuggestionAction.next) {
+                          //     _focus!.nextFocus();
+                          //   } else if (widget.suggestionAction == SuggestionAction.unfocus) {
+                          //     _focus!.unfocus();
+                          //   }
+                          // }
 
-                  // UPDATED BY LYS
-                  // if (widget.suggestionAction != null) {
-                  // _focus!.unfocus();
-                  // }
+                          // UPDATED BY LYS
+                          if (widget.suggestionAction != null) {
+                            _focus!.unfocus();
+                          }
 
                           // hide the suggestions
                           suggestionStream.sink.add(null);
@@ -587,46 +591,47 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
   }
 
   // UPDATED BY LYS
-  Offset getYOffset(Offset widgetOffset, int resultCount) {
-    final size = MediaQuery.of(context).size;
-    final position = widgetOffset.dy;
-    if ((position + height) < (size.height - widget.itemHeight * 2)) {
-      return Offset(0, widget.itemHeight + 2.5);
-    } else {
-      if (widget.additionalWidget != null) {
-        resultCount += 1;
-      }
-      if (resultCount > widget.maxSuggestionsInViewPort) {
-        isUp = false;
-        return Offset(0, -(widget.itemHeight * widget.maxSuggestionsInViewPort));
-      } else {
-        isUp = true;
-        return Offset(0, -(widget.itemHeight * resultCount));
-      }
-    }
-  }
+  // Offset getYOffset(Offset widgetOffset, int resultCount) {
+  //   final size = MediaQuery.of(context).size;
+  //   final position = widgetOffset.dy;
+  //   if ((position + height) < (size.height - widget.itemHeight * 2)) {
+  //     return Offset(0, widget.itemHeight + 2.5);
+  //   } else {
+  //     if (widget.additionalWidget != null) {
+  //       resultCount += 1;
+  //     }
+  //     if (resultCount > widget.maxSuggestionsInViewPort) {
+  //       isUp = false;
+  //       return Offset(0, -(widget.itemHeight * widget.maxSuggestionsInViewPort));
+  //     } else {
+  //       isUp = true;
+  //       return Offset(0, -(widget.itemHeight * resultCount));
+  //     }
+  //   }
+  // }
 
   // Decides whether to show the suggestions
   /// on top or bottom of Searchfield
   /// User can have more control by manually specifying the offset
-  Offset? getYOffset(
-      Offset textFieldOffset, Size textFieldSize, int suggestionsCount) {
+  Offset? getYOffset(Offset textFieldOffset, Size textFieldSize, int suggestionsCount) {
     if (mounted) {
       final size = MediaQuery.of(context).size;
-      final isSpaceAvailable = size.height >
-          textFieldOffset.dy + textFieldSize.height + _totalHeight;
-      if (isSpaceAvailable) {
+      final isSpaceAvailable =
+          size.height > textFieldOffset.dy + textFieldSize.height + _totalHeight;
+      if (widget.showAboveTextField != null && widget.showAboveTextField == true) {
+        isUp = true;
+        return Offset(0, -(widget.itemHeight * suggestionsCount) - 10.0);
+      } else if (isSpaceAvailable) {
         isUp = false;
-        return Offset(0, textFieldSize.height);
+        return Offset(0, textFieldSize.height + 10.0);
       } else {
         // search results should align properly with the searchfield
         if (suggestionsCount > widget.maxSuggestionsInViewPort) {
           isUp = false;
-          return Offset(
-              0, -(widget.itemHeight * widget.maxSuggestionsInViewPort));
+          return Offset(0, -(widget.itemHeight * widget.maxSuggestionsInViewPort));
         } else {
           isUp = true;
-          return Offset(0, -(widget.itemHeight * suggestionsCount));
+          return Offset(0, -(widget.itemHeight * suggestionsCount) - 10.0);
         }
       }
     }
@@ -634,8 +639,7 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
   }
 
   OverlayEntry _createOverlay() {
-    final textFieldRenderBox =
-        key.currentContext!.findRenderObject() as RenderBox;
+    final textFieldRenderBox = key.currentContext!.findRenderObject() as RenderBox;
     final textFieldsize = textFieldRenderBox.size;
     final offset = textFieldRenderBox.localToGlobal(Offset.zero);
     return OverlayEntry(
@@ -643,16 +647,19 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
             stream: suggestionStream.stream,
             builder: (BuildContext context, AsyncSnapshot<List<SearchFieldListItem?>?> snapshot) {
               late var count = widget.maxSuggestionsInViewPort;
-              if (snapshot.data != null) {
+              print('snapshot.data: ${snapshot.data}');
+              if (snapshot.data != null && snapshot.data!.length <= count) {
                 count = snapshot.data!.length;
+              }
+              if (widget.additionalWidget != null) {
+                count += 1;
               }
               return Positioned(
                 left: offset.dx,
                 width: textFieldsize.width,
                 child: CompositedTransformFollower(
-                    offset: widget.offset ??
-                        getYOffset(offset, textFieldsize, count) ??
-                        Offset.zero,
+                    offset:
+                        widget.offset ?? getYOffset(offset, textFieldsize, count) ?? Offset.zero,
                     link: _layerLink,
                     child: Material(child: _suggestionsBuilder())),
               );
@@ -673,7 +680,7 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
     }
 
     if (widget.additionalWidget != null) {
-      height += widget.itemHeight;
+      _totalHeight += widget.itemHeight;
     }
 
     return Column(
