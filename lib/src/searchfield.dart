@@ -361,8 +361,6 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
   @override
   void initState() {
     super.initState();
-    print('init');
-    print('maxSuggestionsInViewPort: ${widget.maxSuggestionsInViewPort}');
     searchController = widget.controller ?? TextEditingController();
     initialize();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -647,7 +645,6 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
             stream: suggestionStream.stream,
             builder: (BuildContext context, AsyncSnapshot<List<SearchFieldListItem?>?> snapshot) {
               late var count = widget.maxSuggestionsInViewPort;
-              print('snapshot.data: ${snapshot.data}');
               if (snapshot.data != null && snapshot.data!.length <= count) {
                 count = snapshot.data!.length;
               }
