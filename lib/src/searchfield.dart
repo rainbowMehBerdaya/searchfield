@@ -244,6 +244,8 @@ class SearchField<T> extends StatefulWidget {
 
   final Function? additionalWidgetOnPressed;
 
+  final bool isNumberSearch;
+
   final bool searchExactMatch;
 
   final bool? showAboveTextField;
@@ -261,6 +263,7 @@ class SearchField<T> extends StatefulWidget {
     this.initialValue,
     this.inputFormatters,
     this.inputType,
+    this.isNumberSearch = false,
     this.itemHeight = 35.0,
     this.marginColor,
     this.maxSuggestionsInViewPort = 5,
@@ -645,9 +648,14 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
             stream: suggestionStream.stream,
             builder: (BuildContext context, AsyncSnapshot<List<SearchFieldListItem?>?> snapshot) {
               late var count = widget.maxSuggestionsInViewPort;
+
               if (snapshot.data != null && snapshot.data!.length <= count) {
                 count = snapshot.data!.length;
+                if (snapshot.data!.isEmpty) {
+                  count = 1;
+                }
               }
+
               if (widget.additionalWidget != null) {
                 count += 1;
               }
@@ -719,11 +727,29 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
                 suggestionStream.sink.add(widget.suggestions);
                 return;
               }
-              for (final suggestion in widget.suggestions) {
-                if (suggestion.searchKey.toLowerCase().contains(query.toLowerCase())) {
-                  searchResult.add(suggestion);
+
+              if (widget.isNumberSearch) {
+                for (final suggestion in widget.suggestions) {
+                  var added = false;
+                  if (suggestion.searchKey.toLowerCase().contains(query.toLowerCase())) {
+                    added = true;
+                    searchResult.add(suggestion);
+                  }
+                  if (!added && query[0] == '0') {
+                    query = query.replaceFirst('0', '62');
+                    if (suggestion.searchKey.toLowerCase().contains(query.toLowerCase())) {
+                      searchResult.add(suggestion);
+                    }
+                  }
+                }
+              } else {
+                for (final suggestion in widget.suggestions) {
+                  if (suggestion.searchKey.toLowerCase().contains(query.toLowerCase())) {
+                    searchResult.add(suggestion);
+                  }
                 }
               }
+
               suggestionStream.sink.add(searchResult);
 
               if (widget.onChange != null) {
