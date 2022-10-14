@@ -367,12 +367,12 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
     searchController = widget.controller ?? TextEditingController();
     initialize();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _overlayEntry = _createOverlay();
+      if (mounted) {_overlayEntry = _createOverlay();
       if (widget.initialValue == null || widget.initialValue!.searchKey.isEmpty) {
         suggestionStream.sink.add(null);
       } else {
         searchController!.text = widget.initialValue!.searchKey;
-        suggestionStream.sink.add([widget.initialValue]);
+        suggestionStream.sink.add([widget.initialValue]);}
       }
     });
   }
