@@ -383,12 +383,14 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
     searchController = widget.controller ?? TextEditingController();
     initialize();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {_overlayEntry = _createOverlay();
-      if (widget.initialValue == null || widget.initialValue!.searchKey.isEmpty) {
-        suggestionStream.sink.add(null);
-      } else {
-        searchController!.text = widget.initialValue!.searchKey;
-        suggestionStream.sink.add([widget.initialValue]);}
+      if (mounted) {
+        _overlayEntry = _createOverlay();
+        if (widget.initialValue == null || widget.initialValue!.searchKey.isEmpty) {
+          suggestionStream.sink.add(null);
+        } else {
+          searchController!.text = widget.initialValue!.searchKey;
+          suggestionStream.sink.add([widget.initialValue]);
+        }
       }
     });
   }
@@ -483,10 +485,7 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
           }
 
           return AnimatedContainer(
-            duration: isUp ? Duration.zero : Duration(milliseconds: 100),
-            // duration: widget.suggestionDirection == SuggestionDirection.up
-            //     ? Duration.zero
-            //     : Duration(milliseconds: 300),
+            duration: suggestionDirection == SuggestionDirection.up ? Duration.zero : Duration(milliseconds: 100),
             height: _totalHeight,
             alignment: Alignment.centerLeft,
             clipBehavior: Clip.antiAlias,
@@ -531,8 +530,7 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
                   Expanded(
                     child: ListView.builder(
                       shrinkWrap: true,
-                      reverse: isUp,
-                      // reverse: widget.suggestionDirection == SuggestionDirection.up,
+                      reverse: suggestionDirection == SuggestionDirection.up,
                       padding: EdgeInsets.zero,
                       itemCount: snapshot.data!.length,
                       physics: snapshot.data!.length == 1
@@ -652,6 +650,8 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
   //   return null;
   // }
 
+  // TODO: CHECK LOGIC OF THE ALGORITHM BELOW !!
+
   // Decides whether to show the suggestions
   /// on top or bottom of Searchfield
   /// User can have more control by manually specifying the offset
@@ -660,19 +660,19 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
       final size = MediaQuery.of(context).size;
       final isSpaceAvailable =
           size.height > textFieldOffset.dy + textFieldSize.height + _totalHeight;
-      if (widget.showAboveTextField != null && widget.showAboveTextField == true) {
-        isUp = true;
+      if (widget.suggestionDirection == SuggestionDirection.up) {
+        suggestionDirection = widget.suggestionDirection;
         return Offset(0, -(widget.itemHeight * suggestionsCount) - 10.0);
       } else if (isSpaceAvailable) {
-        isUp = false;
+        suggestionDirection = SuggestionDirection.down;
         return Offset(0, textFieldSize.height + 10.0);
       } else {
         // search results should align properly with the searchfield
         if (suggestionsCount > widget.maxSuggestionsInViewPort) {
-          isUp = false;
+          suggestionDirection = SuggestionDirection.down;
           return Offset(0, -(widget.itemHeight * widget.maxSuggestionsInViewPort));
         } else {
-          isUp = true;
+          suggestionDirection = SuggestionDirection.up;
           return Offset(0, -(widget.itemHeight * suggestionsCount) - 10.0);
         }
       }
@@ -684,40 +684,43 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
     final textFieldRenderBox = key.currentContext!.findRenderObject() as RenderBox;
     final textFieldsize = textFieldRenderBox.size;
     final offset = textFieldRenderBox.localToGlobal(Offset.zero);
-    Offset yOffset = Offset.zero;
+    var yOffset = Offset.zero;
     return OverlayEntry(
-        builder: (context) => StreamBuilder<List<SearchFieldListItem?>?>(
-            stream: suggestionStream.stream,
-            builder: (BuildContext context, AsyncSnapshot<List<SearchFieldListItem?>?> snapshot) {
-              late var count = widget.maxSuggestionsInViewPort;
+      builder: (context) => StreamBuilder<List<SearchFieldListItem?>?>(
+        stream: suggestionStream.stream,
+        builder: (BuildContext context, AsyncSnapshot<List<SearchFieldListItem?>?> snapshot) {
+          late var count = widget.maxSuggestionsInViewPort;
 
-              if (snapshot.data != null && snapshot.data!.length <= count) {
-                count = snapshot.data!.length;
-                if (snapshot.data!.isEmpty) {
-                  count = 1;
-                }
-              }
+          if (snapshot.data != null && snapshot.data!.length <= count) {
+            count = snapshot.data!.length;
+            if (snapshot.data!.isEmpty) {
+              count = 1;
+            }
+          }
 
-              if (widget.additionalWidget != null) {
-                count += 1;
-              }
+          if (widget.additionalWidget != null) {
+            count += 1;
+          }
 
-              yOffset = getYOffset(offset, textFieldsize, count) ?? Offset.zero;
-              return Positioned(
-                left: offset.dx,
-                width: textFieldsize.width,
-                child: CompositedTransformFollower(
-                    offset: widget.offset ?? yOffset,
-                    link: _layerLink,
-                    child: Material(child: _suggestionsBuilder())),
-              );
-            }));
+          yOffset = getYOffset(offset, textFieldsize, count) ?? Offset.zero;
+          return Positioned(
+            left: offset.dx,
+            width: textFieldsize.width,
+            child: CompositedTransformFollower(
+                offset: widget.offset ?? yOffset,
+                link: _layerLink,
+                child: Material(child: _suggestionsBuilder())),
+          );
+        },
+      ),
+    );
   }
 
   final LayerLink _layerLink = LayerLink();
   late double _totalHeight;
-  bool isUp = false;
+  late SuggestionDirection suggestionDirection;
   GlobalKey key = GlobalKey();
+
   // bool _isDirectionCalculated = false;
   // Offset _offset = Offset.zero;
 
