@@ -263,8 +263,6 @@ class SearchField<T> extends StatefulWidget {
 
   final bool searchExactMatch;
 
-  final bool? showAboveTextField;
-
   SearchField({
     Key? key,
     required this.suggestions,
@@ -299,7 +297,6 @@ class SearchField<T> extends StatefulWidget {
     this.additionalWidget,
     this.additionalWidgetOnPressed,
     this.searchExactMatch = true,
-    this.showAboveTextField,
   })  : assert(
             (initialValue != null && suggestions.containsObject(initialValue)) ||
                 initialValue == null,
