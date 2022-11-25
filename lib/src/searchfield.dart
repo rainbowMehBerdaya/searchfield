@@ -21,6 +21,14 @@ enum SuggestionAction {
   unfocus,
 }
 
+enum SuggestionDirection {
+  /// show suggestions below the searchfield
+  down,
+
+  /// show suggestions above the searchfield
+  up,
+}
+
 class SearchFieldListItem<T> {
   Key? key;
 
@@ -236,6 +244,13 @@ class SearchField<T> extends StatefulWidget {
   /// input formatter for the searchfield
   final List<TextInputFormatter>? inputFormatters;
 
+  /// suggestion direction defaults to [SuggestionDirection.up]
+  /// if [hasOverlay] is `false` then the direction is ignored
+  /// and the suggestions are shown below the searchfield
+  /// when suggestionDirection and offset is specified then
+  /// suggestionDirection is ignored.
+  final SuggestionDirection suggestionDirection;
+
   final Function(dynamic)? onChange;
 
   final bool enabled;
@@ -274,6 +289,7 @@ class SearchField<T> extends StatefulWidget {
     this.searchStyle,
     this.suggestionStyle,
     this.suggestionsDecoration,
+    this.suggestionDirection = SuggestionDirection.down,
     this.suggestionState = Suggestion.expand,
     this.suggestionItemDecoration,
     this.suggestionAction,
@@ -468,6 +484,9 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
 
           return AnimatedContainer(
             duration: isUp ? Duration.zero : Duration(milliseconds: 100),
+            // duration: widget.suggestionDirection == SuggestionDirection.up
+            //     ? Duration.zero
+            //     : Duration(milliseconds: 300),
             height: _totalHeight,
             alignment: Alignment.centerLeft,
             clipBehavior: Clip.antiAlias,
@@ -513,6 +532,7 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
                     child: ListView.builder(
                       shrinkWrap: true,
                       reverse: isUp,
+                      // reverse: widget.suggestionDirection == SuggestionDirection.up,
                       padding: EdgeInsets.zero,
                       itemCount: snapshot.data!.length,
                       physics: snapshot.data!.length == 1
@@ -592,23 +612,44 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
   }
 
   // UPDATED BY LYS
-  // Offset getYOffset(Offset widgetOffset, int resultCount) {
-  //   final size = MediaQuery.of(context).size;
-  //   final position = widgetOffset.dy;
-  //   if ((position + height) < (size.height - widget.itemHeight * 2)) {
-  //     return Offset(0, widget.itemHeight + 2.5);
-  //   } else {
-  //     if (widget.additionalWidget != null) {
-  //       resultCount += 1;
-  //     }
-  //     if (resultCount > widget.maxSuggestionsInViewPort) {
-  //       isUp = false;
-  //       return Offset(0, -(widget.itemHeight * widget.maxSuggestionsInViewPort));
+  // Offset? getYOffset(
+  //     Offset textFieldOffset, Size textFieldSize, int suggestionsCount) {
+  //   if (mounted) {
+  //     final size = MediaQuery.of(context).size;
+  //     final isSpaceAvailable = size.height >
+  //         textFieldOffset.dy + textFieldSize.height + _totalHeight;
+  //     if (widget.suggestionDirection == SuggestionDirection.down) {
+  //       return Offset(0, textFieldSize.height);
+  //     } else if (widget.suggestionDirection == SuggestionDirection.up) {
+  //       // search results should not exceed maxSuggestionsInViewPort
+  //       if (suggestionsCount > widget.maxSuggestionsInViewPort) {
+  //         return Offset(
+  //             0, -(widget.itemHeight * widget.maxSuggestionsInViewPort));
+  //       } else {
+  //         return Offset(0, -(widget.itemHeight * suggestionsCount));
+  //       }
   //     } else {
-  //       isUp = true;
-  //       return Offset(0, -(widget.itemHeight * resultCount));
+  //       if (!_isDirectionCalculated) {
+  //         _isDirectionCalculated = true;
+  //         if (isSpaceAvailable) {
+  //           _offset = Offset(0, textFieldSize.height);
+  //           return _offset;
+  //         } else {
+  //           if (suggestionsCount > widget.maxSuggestionsInViewPort) {
+  //             _offset = Offset(
+  //                 0, -(widget.itemHeight * widget.maxSuggestionsInViewPort));
+  //             return _offset;
+  //           } else {
+  //             _offset = Offset(0, -(widget.itemHeight * suggestionsCount));
+  //             return _offset;
+  //           }
+  //         }
+  //       } else {
+  //         return _offset;
+  //       }
   //     }
   //   }
+  //   return null;
   // }
 
   // Decides whether to show the suggestions
@@ -643,6 +684,7 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
     final textFieldRenderBox = key.currentContext!.findRenderObject() as RenderBox;
     final textFieldsize = textFieldRenderBox.size;
     final offset = textFieldRenderBox.localToGlobal(Offset.zero);
+    Offset yOffset = Offset.zero;
     return OverlayEntry(
         builder: (context) => StreamBuilder<List<SearchFieldListItem?>?>(
             stream: suggestionStream.stream,
@@ -659,12 +701,13 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
               if (widget.additionalWidget != null) {
                 count += 1;
               }
+
+              yOffset = getYOffset(offset, textFieldsize, count) ?? Offset.zero;
               return Positioned(
                 left: offset.dx,
                 width: textFieldsize.width,
                 child: CompositedTransformFollower(
-                    offset:
-                        widget.offset ?? getYOffset(offset, textFieldsize, count) ?? Offset.zero,
+                    offset: widget.offset ?? yOffset,
                     link: _layerLink,
                     child: Material(child: _suggestionsBuilder())),
               );
@@ -675,6 +718,8 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
   late double _totalHeight;
   bool isUp = false;
   GlobalKey key = GlobalKey();
+  // bool _isDirectionCalculated = false;
+  // Offset _offset = Offset.zero;
 
   @override
   Widget build(BuildContext context) {
