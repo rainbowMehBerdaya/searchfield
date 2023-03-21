@@ -1,15 +1,18 @@
-# [searchfield: ^0.7.2](https://pub.dev/packages/searchfield)
+# [searchfield: ^0.7.5](https://pub.dev/packages/searchfield)
 
-A highly customizable simple and easy to use flutter Widget to add a searchfield to your Flutter Application.This Widget allows you to search and select from list of suggestions.
+ <a href="https://pub.dev/packages/searchfield"><img src="https://img.shields.io/pub/v/searchfield.svg" alt="Pub"></a>
+
+
+A highly customizable simple and easy to use flutter searchfield widget. This Widget allows you to search and select a suggestion from list of suggestions.
 
 Think of this widget like a dropdownButton field with an ability
 
 - to Search 🔍.
-- to define height of each Suggestion Item
+- to position and define height of each Suggestion Item
 - to show dynamic suggestions as an overlay above the widgets or in the widget tree.
 - to define max number of items visible in the viewport 📱
-- to completely customize the input searchfield like a normal textfield
-- to customize the suggestions with colors and gradients
+- to filter out the suggestions with a custom logic.
+- to visually customize the input and the suggestions
 
 list of all the properties mentioned below
 
@@ -40,6 +43,22 @@ SearchField<Country>(
      (e) => SearchFieldListItem<Country>(
         e.name,
         item: e,
+        // Use child to show Custom Widgets in the suggestions
+        // defaults to Text widget
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundImage: NetworkImage(e.flag),
+              ),
+              SizedBox(
+                width: 10,
+              ),
+              Text(e.name),
+            ],
+          ),
+        ),
     ),
   )
   .toList(),
@@ -116,7 +135,9 @@ Form(
 
 - `autoCorrect`: Defines whether to enable autoCorrect defaults to `true`
 - `controller`: TextEditing Controller to interact with the searchfield.
+- `comparator` property to filter out the suggestions with a custom logic.
 - `emptyWidget`: Custom Widget to show when search returns empty Results (defaults to `SizedBox.shrink`)
+- `enabled`: Defines whether to enable the searchfield defaults to `true`
 - `focusNode` : FocusNode to interact with the searchfield.
 - `hasOverlay` : shows floating suggestions on top of the Ui
   if disabled the suggestions will be shown along the searchInput. if not specified defaults to `true`.
@@ -130,6 +151,7 @@ Form(
 - `offset` : suggestion List offset from the searchfield, The top left corner of the searchfield is the origin (0,0).
 - `onSuggestionTap` : callback when a sugestion is tapped it also returns the tapped value.
 - `onSubmit` : callback when the searchfield is submitted, it returns the current text in the searchfield.
+- `scrollbarAlwaysVisible`: Defines whether to show the scrollbar always or only when scrolling.
 - `suggestions`**(required)** : List of SearchFieldListItem to search from.
 each `SearchFieldListItem` in the list requires a unique searchKey, which is used to search the list and an optional Widget, Custom Object to display custom widget and to associate a object with the suggestion list.
 - `SuggestionState`: enum to hide/show the suggestion on focusing the searchfield defaults to `SuggestionState.expand`.

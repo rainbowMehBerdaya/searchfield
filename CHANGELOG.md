@@ -1,3 +1,18 @@
+#### [0.7.5] - Jan 27, 2023
+
+- Hot Fix: https://github.com/maheshmnj/searchfield/issues/70 OnSuggestionTap broke in flutter 3.7 for non mobile platforms see: https://github.com/flutter/flutter/issues/119390
+
+- Adds Scrollbar for suggestions
+
+#### [0.7.4] - Jan 16, 2023
+
+- Add `comparator` property to filter out the suggestions with a custom logic.
+- Fixes [#69](https://github.com/maheshmnj/searchfield/issues/69)
+
+#### [0.7.3] - Oct 25, 2022
+
+- Add `enabled` property see [#65](https://github.com/maheshmnj/searchfield/pull/65)
+
 #### [0.7.2] - Oct 25, 2022
 
 - Add `suggestionDirection` property to position the suggestions.
@@ -23,6 +38,7 @@
 
 - Add `autoCorrect` and `inputFormatter`  property
 - Fix suggestionState for `hasOverlay:false`
+
 #### [0.6.5] - May 19, 2022
 
 - Fixes runtime warning in flutter 3 [Issue #29](https://github.com/maheshmnj/searchfield/issues/29)

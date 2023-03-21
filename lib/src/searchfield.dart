@@ -43,6 +43,10 @@ class SearchFieldListItem<T> {
   /// if not specified, Text widget with default styling will be used
   final Widget? child;
 
+  /// The widget to be shown in the suggestion list
+  /// if not specified, Text widget with default styling will be used
+  /// to show a custom widget, use [child] instead
+  /// see example in [example/lib/country_search.dart]()
   SearchFieldListItem(this.searchKey, {this.child, this.item, this.key});
 
   @override
@@ -88,6 +92,9 @@ class SearchField<T> extends StatefulWidget {
 
   /// Callback when the suggestion is selected.
   final Function(SearchFieldListItem<T>)? onSuggestionTap;
+
+  /// Defines whether to enable the searchfield defaults to `true`
+  final bool? enabled;
 
   /// Callback when the Searchfield is submitted
   ///  it returns the text from the searchfield
@@ -222,6 +229,10 @@ class SearchField<T> extends StatefulWidget {
   ///
   final String? Function(String?)? validator;
 
+  /// Defines whether to show the scrollbar always or only when scrolling.
+  /// defaults to `true`
+  final bool scrollbarAlwaysVisible;
+
   /// if false the suggestions will be shown below
   /// the searchfield along the Y-axis.
   /// if true the suggestions will be shown floating like the
@@ -238,6 +249,13 @@ class SearchField<T> extends StatefulWidget {
   /// defaults to [SizedBox.shrink]
   final Widget emptyWidget;
 
+  /// Function that implements the comparison criteria to filter out suggestions.
+  /// The 2 parameters are the input text and the `suggestionKey` passed to each `SearchFieldListItem`
+  /// which should return true or false to filter out the suggestion.
+  /// by default the comparator shows the suggestions that contain the input text
+  /// in the `suggestionKey`
+  final bool Function(String inputText, String suggestionKey)? comparator;
+
   /// Defines whether to enable autoCorrect defaults to `true`
   final bool autoCorrect;
 
@@ -253,8 +271,6 @@ class SearchField<T> extends StatefulWidget {
 
   final Function(dynamic)? onChange;
 
-  final bool enabled;
-
   final Widget? additionalWidget;
 
   final Function? additionalWidgetOnPressed;
@@ -263,13 +279,12 @@ class SearchField<T> extends StatefulWidget {
 
   final bool searchExactMatch;
 
-  SearchField({
-    Key? key,
+  SearchField(
+    {Key? key,
     required this.suggestions,
     this.autoCorrect = true,
     this.controller,
     this.emptyWidget = const SizedBox.shrink(),
-    this.enabled = true,
     this.focusNode,
     this.hasOverlay = true,
     this.hint,
@@ -285,6 +300,7 @@ class SearchField<T> extends StatefulWidget {
     this.onSuggestionTap,
     this.searchInputDecoration,
     this.searchStyle,
+    this.scrollbarAlwaysVisible = true,
     this.suggestionStyle,
     this.suggestionsDecoration,
     this.suggestionDirection = SuggestionDirection.down,
@@ -297,6 +313,7 @@ class SearchField<T> extends StatefulWidget {
     this.additionalWidget,
     this.additionalWidgetOnPressed,
     this.searchExactMatch = true,
+    this.comparator,
   })  : assert(
             (initialValue != null && suggestions.containsObject(initialValue)) ||
                 initialValue == null,
@@ -317,6 +334,7 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
   @override
   void dispose() {
     suggestionStream.close();
+    _scrollController.dispose();
     if (widget.controller == null) {
       searchController!.dispose();
     }
@@ -340,15 +358,19 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
       }
       if (widget.hasOverlay) {
         if (isSuggestionExpanded) {
-          if (widget.suggestionState == Suggestion.expand) {
-            Future.delayed(Duration(milliseconds: 100), () {
-              suggestionStream.sink.add(widget.suggestions);
-            });
+          if (widget.initialValue == null) {
+            if (widget.suggestionState == Suggestion.expand) {
+              Future.delayed(Duration(milliseconds: 100), () {
+                suggestionStream.sink.add(widget.suggestions);
+              });
+            }
           }
           _overlayEntry = _createOverlay();
-          Overlay.of(context)!.insert(_overlayEntry);
+          Overlay.of(context).insert(_overlayEntry!);
         } else {
-          _overlayEntry.remove();
+          if (_overlayEntry != null && _overlayEntry!.mounted) {
+            _overlayEntry?.remove();
+          }
         }
       } else {
         if (isSuggestionExpanded) {
@@ -372,7 +394,7 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
     });
   }
 
-  late OverlayEntry _overlayEntry;
+  OverlayEntry? _overlayEntry;
 
   @override
   void initState() {
@@ -403,8 +425,8 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
         _focus!.removeListener(initialize);
         initialize();
       } else {
-        if (_overlayEntry.mounted) {
-          _overlayEntry.remove();
+        if (_overlayEntry!.mounted) {
+          _overlayEntry?.remove();
         }
       }
       if (mounted) {
@@ -482,7 +504,9 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
           }
 
           return AnimatedContainer(
-            duration: suggestionDirection == SuggestionDirection.up ? Duration.zero : Duration(milliseconds: 100),
+            duration: widget.suggestionDirection == SuggestionDirection.up
+                ? Duration.zero
+                : Duration(milliseconds: 300),
             height: _totalHeight,
             alignment: Alignment.centerLeft,
             clipBehavior: Clip.antiAlias,
@@ -503,7 +527,10 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
                     ),
                   ],
                 ),
-            child: Scrollbar(
+            child: RawScrollbar(
+              thumbVisibility: widget.scrollbarAlwaysVisible,
+              controller: _scrollController,
+              padding: EdgeInsets.zero,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.start,
@@ -529,6 +556,7 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
                       shrinkWrap: true,
                       reverse: suggestionDirection == SuggestionDirection.up,
                       padding: EdgeInsets.zero,
+                      controller: _scrollController,
                       itemCount: snapshot.data!.length,
                       physics: snapshot.data!.length == 1
                           ? NeverScrollableScrollPhysics()
@@ -570,23 +598,23 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
                           width: double.infinity,
                           alignment: Alignment.centerLeft,
                           decoration: widget.suggestionItemDecoration?.copyWith(
-                                border: widget.suggestionItemDecoration?.border ??
-                                    Border(
-                                      bottom: BorderSide(
-                                        color:
-                                            widget.marginColor ?? onSurfaceColor.withOpacity(0.1),
-                                      ),
-                                    ),
-                              ) ??
+                            border: widget.suggestionItemDecoration?.border ??
+                                Border(
+                                  bottom: BorderSide(
+                                    color:
+                                    widget.marginColor ?? onSurfaceColor.withOpacity(0.1),
+                                  ),
+                                ),
+                          ) ??
                               BoxDecoration(
                                 border: index == snapshot.data!.length - 1
                                     ? null
                                     : Border(
-                                        bottom: BorderSide(
-                                          color:
-                                              widget.marginColor ?? onSurfaceColor.withOpacity(0.1),
-                                        ),
-                                      ),
+                                  bottom: BorderSide(
+                                    color:
+                                    widget.marginColor ?? onSurfaceColor.withOpacity(0.1),
+                                  ),
+                                ),
                               ),
                           child: snapshot.data![index]!.child ??
                               Text(
@@ -649,7 +677,7 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
 
   // TODO: CHECK LOGIC OF THE ALGORITHM BELOW !!
 
-  // Decides whether to show the suggestions
+  /// Decides whether to show the suggestions
   /// on top or bottom of Searchfield
   /// User can have more control by manually specifying the offset
   Offset? getYOffset(Offset textFieldOffset, Size textFieldSize, int suggestionsCount) {
@@ -721,6 +749,8 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
   // bool _isDirectionCalculated = false;
   // Offset _offset = Offset.zero;
 
+  final ScrollController _scrollController = ScrollController();
+
   @override
   Widget build(BuildContext context) {
     if (widget.suggestions.length > widget.maxSuggestionsInViewPort) {
@@ -740,6 +770,7 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
           link: _layerLink,
           child: TextFormField(
             key: key,
+            enabled: widget.enabled,
             autocorrect: widget.autoCorrect,
             onFieldSubmitted: (x) {
               if (widget.onSubmit != null) widget.onSubmit!(x);
@@ -755,7 +786,6 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
                 }
               }
             },
-            enabled: widget.enabled,
             inputFormatters: widget.inputFormatters,
             controller: widget.controller ?? searchController,
             focusNode: _focus,
@@ -773,6 +803,7 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
                 return;
               }
 
+              // TODO: CHANGE THIS TO COMPARATOR
               if (widget.isNumberSearch) {
                 for (final suggestion in widget.suggestions) {
                   var added = false;
@@ -789,7 +820,11 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
                 }
               } else {
                 for (final suggestion in widget.suggestions) {
-                  if (suggestion.searchKey.toLowerCase().contains(query.toLowerCase())) {
+                  if (widget.comparator != null) {
+                    if (widget.comparator!(query, suggestion.searchKey)) {
+                      searchResult.add(suggestion);
+                    }
+                  } else if (suggestion.searchKey.toLowerCase().contains(query.toLowerCase())) {
                     searchResult.add(suggestion);
                   }
                 }
