@@ -279,12 +279,13 @@ class SearchField<T> extends StatefulWidget {
 
   final bool searchExactMatch;
 
-  SearchField(
-    {Key? key,
+  SearchField({
+    Key? key,
     required this.suggestions,
     this.autoCorrect = true,
     this.controller,
     this.emptyWidget = const SizedBox.shrink(),
+    this.enabled,
     this.focusNode,
     this.hasOverlay = true,
     this.hint,
@@ -598,23 +599,23 @@ class _SearchFieldState<T> extends State<SearchField<T>> {
                           width: double.infinity,
                           alignment: Alignment.centerLeft,
                           decoration: widget.suggestionItemDecoration?.copyWith(
-                            border: widget.suggestionItemDecoration?.border ??
-                                Border(
-                                  bottom: BorderSide(
-                                    color:
-                                    widget.marginColor ?? onSurfaceColor.withOpacity(0.1),
-                                  ),
-                                ),
-                          ) ??
+                                border: widget.suggestionItemDecoration?.border ??
+                                    Border(
+                                      bottom: BorderSide(
+                                        color:
+                                            widget.marginColor ?? onSurfaceColor.withOpacity(0.1),
+                                      ),
+                                    ),
+                              ) ??
                               BoxDecoration(
                                 border: index == snapshot.data!.length - 1
                                     ? null
                                     : Border(
-                                  bottom: BorderSide(
-                                    color:
-                                    widget.marginColor ?? onSurfaceColor.withOpacity(0.1),
-                                  ),
-                                ),
+                                        bottom: BorderSide(
+                                          color:
+                                              widget.marginColor ?? onSurfaceColor.withOpacity(0.1),
+                                        ),
+                                      ),
                               ),
                           child: snapshot.data![index]!.child ??
                               Text(
