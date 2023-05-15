@@ -1,4 +1,4 @@
-# [searchfield: ^0.7.5](https://pub.dev/packages/searchfield)
+# [searchfield: ^0.8.0](https://pub.dev/packages/searchfield)
 
  <a href="https://pub.dev/packages/searchfield"><img src="https://img.shields.io/pub/v/searchfield.svg" alt="Pub"></a>
 
@@ -38,30 +38,29 @@ Use the Widget
 
 ```dart
 SearchField<Country>(
-   suggestions: countries
-     .map(
-     (e) => SearchFieldListItem<Country>(
-        e.name,
-        item: e,
-        // Use child to show Custom Widgets in the suggestions
-        // defaults to Text widget
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Row(
-            children: [
-              CircleAvatar(
-                backgroundImage: NetworkImage(e.flag),
-              ),
-              SizedBox(
-                width: 10,
-              ),
-              Text(e.name),
-            ],
-          ),
+  suggestions: countries
+    .map(
+    (e) => SearchFieldListItem<Country>(
+      e.name,
+      item: e,
+      // Use child to show Custom Widgets in the suggestions
+      // defaults to Text widget
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundImage: NetworkImage(e.flag),
+            ),
+            SizedBox(
+              width: 10,
+            ),
+            Text(e.name),
+          ],
         ),
-    ),
-  )
-  .toList(),
+      ),
+  ),
+  ).toList(),
 ),
 ```
 
@@ -71,40 +70,38 @@ SearchField<Country>(
 
 ```dart
 Form(
-   key: _formKey,
-   child: SearchField(
-            suggestions: _statesOfIndia.map((e) =>
-               SearchFieldListItem(e)).toList(),
-            suggestionState: Suggestion.expand,
-            textInputAction: TextInputAction.next,
-            hint: 'SearchField Example 2',
-            hasOverlay: false,
-            searchStyle: TextStyle(
-              fontSize: 18,
-              color: Colors.black.withOpacity(0.8),
-            ),
-            validator: (x) {
-              if (!_statesOfIndia.contains(x) || x!.isEmpty) {
-               return 'Please Enter a valid State';
-              }
-            return null;
-            },
-            searchInputDecoration: InputDecoration(
-              focusedBorder: OutlineInputBorder(
-               borderSide: BorderSide(
-               color: Colors.black.withOpacity(0.8),
-               ),
-              ),
-              border: OutlineInputBorder(
-               borderSide: BorderSide(color: Colors.red),
-              ),
-            ),
-            maxSuggestionsInViewPort: 6,
-            itemHeight: 50,
-            onTap: (x) {},
-         )
-   )
-
+  key: _formKey,
+  child: SearchField(
+    suggestions: _statesOfIndia
+        .map((e) => SearchFieldListItem(e))
+        .toList(),
+    suggestionState: Suggestion.expand,
+    textInputAction: TextInputAction.next,
+    hint: 'SearchField Example 2',
+    searchStyle: TextStyle(
+      fontSize: 18,
+      color: Colors.black.withOpacity(0.8),
+    ),
+    validator: (x) {
+      if (!_statesOfIndia.contains(x) || x!.isEmpty) {
+        return 'Please Enter a valid State';
+      }
+      return null;
+    },
+    searchInputDecoration: InputDecoration(
+      focusedBorder: OutlineInputBorder(
+        borderSide: BorderSide(
+          color: Colors.black.withOpacity(0.8),
+        ),
+      ),
+      border: OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.red),
+      ),
+    ),
+    maxSuggestionsInViewPort: 6,
+    itemHeight: 50,
+    onTap: (x) {},
+  ))
 ```
 
 <img src="https://user-images.githubusercontent.com/31410839/104081674-2ec10980-5256-11eb-9712-6b18e3e67f4a.gif" width="360"/>
@@ -120,10 +117,8 @@ Form(
 
 ### Support for Overlays
 
-- With v0.5.0 Searchfield now adds support for Overlays which shows the suggestions floating on top of the Ui.
+- With v0.5.0 Searchfield now adds support for Overlays(default) which shows the suggestions floating on top of the Ui.
 - The position of suggestions is dynamic based on the space available for the suggestions to expand within the viewport.
-- Overlay is enabled by default, You can disable this floating suggestions by passing the property `hasOverlay=false`.
-- However Theres also a known issue, when toggling `hasOverflow` from false to true you should manually do a hot restart to make it work.
 
 <p float="left;padding=10px">
 <img src = "https://user-images.githubusercontent.com/31410839/114541712-b31b9200-9c74-11eb-90be-dee7ef8a4e4b.gif" width="400">
@@ -139,9 +134,8 @@ Form(
 - `emptyWidget`: Custom Widget to show when search returns empty Results (defaults to `SizedBox.shrink`)
 - `enabled`: Defines whether to enable the searchfield defaults to `true`
 - `focusNode` : FocusNode to interact with the searchfield.
-- `hasOverlay` : shows floating suggestions on top of the Ui
-  if disabled the suggestions will be shown along the searchInput. if not specified defaults to `true`.
 - `hint` : hint for the search Input.
+- `readOnly` : Defines whether to enable the searchfield defaults to `false`
 - `initialValue` : The initial value to be set in searchfield when its rendered, if not specified it will be empty.
 - `inputType`: Keyboard Type for SearchField
 - `inputFormatters`: Input Formatter for SearchField
@@ -149,6 +143,7 @@ Form(
 - `marginColor` : Color for the margin between the suggestions.
 - `maxSuggestionsInViewPort` : The max number of suggestions that can be shown in a viewport.
 - `offset` : suggestion List offset from the searchfield, The top left corner of the searchfield is the origin (0,0).
+- `onSearchTextChanged`: callback when the searchfield text changes, it returns the current text in the searchfield.
 - `onSuggestionTap` : callback when a sugestion is tapped it also returns the tapped value.
 - `onSubmit` : callback when the searchfield is submitted, it returns the current text in the searchfield.
 - `scrollbarAlwaysVisible`: Defines whether to show the scrollbar always or only when scrolling.
@@ -163,6 +158,7 @@ each `SearchFieldListItem` in the list requires a unique searchKey, which is use
 - `SuggestionAction` : enum to control focus of the searchfield on suggestion tap.
 - `suggestionStyle`:Specifies `TextStyle` for suggestions when no child is provided.
 - `textInputAction` : An action the user has requested the text input control to perform throgh the submit button on keyboard.
+- `textCapitalization` : Configures how the platform keyboard will select an uppercase or lowercase keyboard on IOS and Android.
 
 ### You can find all the [code samples here](https://github.com/maheshmnj/searchfield/tree/master/example)
 

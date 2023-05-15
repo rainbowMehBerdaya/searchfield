@@ -65,11 +65,11 @@ class _CountrySearchState extends State<CountrySearch> {
                               SearchFieldListItem(country.name, item: country))
                           .toList(),
                       suggestionState: Suggestion.hidden,
-                      hasOverlay: true,
                       controller: _searchController,
                       hint: 'Search by country name',
                       maxSuggestionsInViewPort: 4,
                       itemHeight: 45,
+                      textCapitalization: TextCapitalization.words,
                       validator: (x) {
                         if (x!.isEmpty || !containsCountry(x)) {
                           return 'Please Enter a valid Country';

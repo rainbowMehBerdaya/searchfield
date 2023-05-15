@@ -1,8 +1,23 @@
+#### [0.8.0] - May 05, 2023
+- Fix: [Issue #78](https://github.com/maheshmnj/searchfield/issues/78) Adds `onSearchTextChanged` callback to get the search text on every change.
+- Deprecate `comparator` property, use `onSearchTextChanged` instead.
+
+#### [0.7.8] - May 02, 2023
+- Fix [Issue 77](https://github.com/maheshmnj/searchfield/issues/77) Add TextCapitalization property to SearchField.
+
+#### [0.7.7] - Apr 27, 2023
+- Fix [Issue: 76](https://github.com/maheshmnj/searchfield/issues/76) Overlay not getting closed on Route pop.
+
+#### [0.7.6] - Apr 16, 2023
+- Add 'readOnly' property to disable editing
+- [BREAKING] [Issue 58](https://github.com/maheshmnj/searchfield/issues/58): Removes `hasOverlay` property, now suggestions are always shown as an overlay
+- Fixes: SearchField Cannot be wrapped with Center [Issue 57](https://github.com/maheshmnj/searchfield/issues/57)
+
 #### [0.7.5] - Jan 27, 2023
 
 - Hot Fix: https://github.com/maheshmnj/searchfield/issues/70 OnSuggestionTap broke in flutter 3.7 for non mobile platforms see: https://github.com/flutter/flutter/issues/119390
 
-- Adds Scrollbar for suggestions
+- [BREAKING] Adds Scrollbar for suggestions (Requires flutter stable 3.7 or greater.)
 
 #### [0.7.4] - Jan 16, 2023
 
