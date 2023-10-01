@@ -1,4 +1,4 @@
-# [searchfield: ^0.8.3](https://pub.dev/packages/searchfield)
+# [searchfield: ^0.8.4](https://pub.dev/packages/searchfield)
 
  <a href="https://pub.dev/packages/searchfield"><img src="https://img.shields.io/pub/v/searchfield.svg" alt="Pub"></a>
 
@@ -64,7 +64,7 @@ SearchField<Country>(
 ),
 ```
 
- <img src="https://user-images.githubusercontent.com/31410839/101930194-d74f5f80-3bfd-11eb-8f08-ca8f593cdb01.gif" width="210"/>
+ <img src="https://github.com/maheshmnj/searchfield/assets/31410839/08bd594c-1593-4865-81a8-5d347077b98a" width="210"/>
 
 #### Example2 (Validation)
 
@@ -108,11 +108,33 @@ Form(
 
 ## Customize the suggestions the way you want
 
+Suggestions can be passed as a widget using the child property of `SearchFieldListItem`
+
+```dart
+SearchField(
+  suggestions: _statesOfIndia
+     .map((e) => SearchFieldListItem(e,
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: Padding(
+             padding: const EdgeInsets.symmetric(horizontal:16.0),
+               child: Text(e,
+                 style: TextStyle(color: Colors.red),
+               ),
+             ),
+          ))).toList(),
+    ...
+    ...
+)
+```
 <p float="left;padding=10px">
   <img src ="https://user-images.githubusercontent.com/31410839/115071426-ddd74600-9f13-11eb-8401-c4055344eff2.png" width="210"/>
   <img src = "https://user-images.githubusercontent.com/31410839/115071441-e29bfa00-9f13-11eb-8143-5e183a502df4.png" width="170"/>
   <img src = "https://user-images.githubusercontent.com/31410839/115071445-e3349080-9f13-11eb-8d9b-e4dc81d3e7a7.png"" width="232"/>
-  <img src="https://user-images.githubusercontent.com/31410839/154835349-3d06376c-98ec-45ca-bede-10f9e2f69589.png" width="215"/>
+</p>
+<p float="left;padding=10px">
+  <img src="https://user-images.githubusercontent.com/31410839/154835349-3d06376c-98ec-45ca-bede-10f9e2f69589.png" width="300"/>
+ <img width="300" alt="image" src="https://github.com/maheshmnj/searchfield/assets/31410839/e109e6c4-c36a-4d58-b5b2-b6b4999924d6">
 </p>
 
 ### Support for Overlays
@@ -130,7 +152,7 @@ Form(
 
 - `autoCorrect`: Defines whether to enable autoCorrect defaults to `true`
 - `controller`: TextEditing Controller to interact with the searchfield.
-- `comparator` property to filter out the suggestions with a custom logic.
+- `comparator` property to filter out the suggestions with a custom logic (Comparator is deprecated Use `onSearchTextChanged` instead).
 - `emptyWidget`: Custom Widget to show when search returns empty Results (defaults to `SizedBox.shrink`)
 - `enabled`: Defines whether to enable the searchfield defaults to `true`
 - `focusNode` : FocusNode to interact with the searchfield.
@@ -143,6 +165,7 @@ Form(
 - `marginColor` : Color for the margin between the suggestions.
 - `maxSuggestionsInViewPort` : The max number of suggestions that can be shown in a viewport.
 - `offset` : suggestion List offset from the searchfield, The top left corner of the searchfield is the origin (0,0).
+- `onSaved` : An optional method to call with the final value when the form is saved via FormState.save.
 - `onSearchTextChanged`: callback when the searchfield text changes, it returns the current text in the searchfield.
 - `onSuggestionTap` : callback when a sugestion is tapped it also returns the tapped value.
 - `onSubmit` : callback when the searchfield is submitted, it returns the current text in the searchfield.

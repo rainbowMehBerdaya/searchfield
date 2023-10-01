@@ -1,15 +1,3 @@
-/*
- * File: searchfield_test.dart
- * Project: None
- * File Created: Thursday, 21st April 2022 7:47:45 am
- * Author: Mahesh Jamdade
- * -----
- * Last Modified: Thursday, 21st April 2022 7:49:41 am
- * Modified By: Mahesh Jamdade
- * -----
- * Copyright 2022 - 2022 Widget Media Labs
- */
-
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -730,5 +718,35 @@ void main() {
     final textField = tester.firstWidget<TextField>(finder);
     expect(finder, findsOneWidget);
     expect(textField.textCapitalization, TextCapitalization.none);
+  });
+
+  testWidgets("SearchField should trigger onSaved", (widgetTester) async {
+    final formKey = GlobalKey<FormState>();
+    final controller = TextEditingController();
+    await widgetTester.pumpWidget(_boilerplate(
+      child: Form(
+        key: formKey,
+        child: SearchField(
+          key: const Key('searchfield'),
+          suggestions: ['ABC', 'DEF', 'GHI', 'JKL']
+              .map(SearchFieldListItem<String>.new)
+              .toList(),
+          controller: controller,
+          suggestionState: Suggestion.expand,
+          onSaved: (value) {
+            expect(value, 'ABC');
+          },
+        ),
+      ),
+    ));
+    final listFinder = find.byType(ListView);
+    final textField = find.byType(TextFormField);
+    expect(textField, findsOneWidget);
+    expect(listFinder, findsNothing);
+    await widgetTester.tap(textField);
+    await widgetTester.enterText(textField, 'ABC');
+    await widgetTester.pumpAndSettle();
+    expect(formKey.currentState!.validate(), true);
+    formKey.currentState!.save();
   });
 }
